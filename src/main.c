@@ -29,17 +29,11 @@ static void update_time()
 {
   time_t temp = time(NULL);
   struct tm *tick_time = localtime(&temp);
- // static char s_buffer2[8];
- // static char s_buffer3[20];
- // strftime(s_buffer2, sizeof(s_buffer2), "%H:%M", tick_time);
   
   strftime(szDay, sizeof(szDay), "%a", tick_time);
   strftime(szDate, sizeof(szDate), "%d/%m/%y", tick_time);
   
   snprintf(s_buffer_date, 22, "\r\n\r\n%s\r\n%s", szDay, szDate);
-  
-//  text_layer_set_text(text_top, s_buffer3);
-//  text_layer_set_text(text_layer, s_buffer2);
   
   StatusHour = tick_time->tm_hour;
   if (StatusHour >= 12)
@@ -61,41 +55,48 @@ static void canvas_update_proc(Layer *layer, GContext *ctx)
   float AngleHour = 0;
   float AngleMin = 0;
 
-  /*
-  int i;
-  radiusv = 150;
-
-  for( i = 1 ; i < StatusHour + 1 ; i++)
-  {
-    anglev = TRIG_MAX_ANGLE * i / MAX_MINS;
-
-    y = (-cos_lookup(anglev) * radiusv / TRIG_MAX_RATIO);
-    x = (sin_lookup(anglev) * radiusv / TRIG_MAX_RATIO) ;
-
-    GPoint start = GPoint(DISP_X_MID, DISP_Y_MID);
-    GPoint end = GPoint(DISP_X_MID + x, DISP_Y_MID + y);
-    graphics_draw_line(ctx, start, end); 
-  }
-  */
-  GRect bounds = layer_get_bounds(layer);
+  GRect bounds = layer_get_bounds(layer);  
   
     // Date
   graphics_context_set_text_color(ctx, GColorBlack);
   graphics_draw_text(ctx, s_buffer_date, fonts_get_system_font(FONT_KEY_GOTHIC_24), bounds,
                      GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
-  
   // Minute
   AngleMin = (360.0f * ((float)StatusMin / 60.0f));
-  GRect frame = grect_inset(bounds, GEdgeInsets(-40));
+  GRect frame = grect_inset(bounds, GEdgeInsets(-41));
   graphics_context_set_fill_color(ctx, GColorBlack);
+  graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 47,
+                                  DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(360.0f));
+  frame = grect_inset(bounds, GEdgeInsets(-40));
+  graphics_context_set_fill_color(ctx, GColorWhite);
   graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 45,
+                                  DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(360.0f));
+
+  graphics_context_set_fill_color(ctx, GColorBlack);
+  if (AngleMin == 0)
+    graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 45,
+                                  DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(2.0f));
+  else
+    graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 45,
                                   DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(AngleMin));
   
   // Hour
   AngleHour = (360.0f * ((float)StatusHour / 12.0f));
-      GRect frame2 = grect_inset(bounds, GEdgeInsets(10));
+  frame = grect_inset(bounds, GEdgeInsets(9));
   graphics_context_set_fill_color(ctx, GColorBlack);
-  graphics_fill_radial(ctx, frame2, GOvalScaleModeFitCircle, 20,
+  graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 22,
+                                  DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(360.0f));
+  frame = grect_inset(bounds, GEdgeInsets(10));
+  graphics_context_set_fill_color(ctx, GColorWhite);
+  graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 20,
+                                  DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(360.0f));
+  
+  graphics_context_set_fill_color(ctx, GColorBlack);
+  if (AngleHour == 0)
+    graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 20,
+                                  DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(2.0f));
+  else
+    graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 20,
                                   DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(AngleHour));
 }
 
@@ -105,15 +106,6 @@ static void window_load(Window *window)
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
 
-  /*
-  text_top = text_layer_create((GRect) { .origin = { 5, 10 }, .size = { bounds.size.w-10, 40 } });
-  text_layer_set_text_alignment(text_top, GTextAlignmentCenter);
-  text_layer_set_font(text_top, fonts_get_system_font(FONT_KEY_GOTHIC_28));
-  
-  text_layer = text_layer_create((GRect) { .origin = { 10, 90 }, .size = { bounds.size.w-20, 50 } });
-  text_layer_set_text_alignment(text_layer, GTextAlignmentCenter);
-  text_layer_set_font(text_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_MEDIUM_NUMBERS));
-  */
   // Create canvas layer
   s_canvas_layer = layer_create(bounds);
   layer_set_update_proc(s_canvas_layer, canvas_update_proc);
@@ -121,8 +113,6 @@ static void window_load(Window *window)
   update_time();
   
   layer_add_child(window_get_root_layer(window), s_canvas_layer);
-//  layer_add_child(window_layer, text_layer_get_layer(text_top));
-//  layer_add_child(window_layer, text_layer_get_layer(text_layer));
 }
 
 
