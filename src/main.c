@@ -19,8 +19,8 @@ static int StatusMin = 0;
 static char szDay[10];
 static char szDate[20];
 static char s_buffer_date[30];
-static uint8_t u8BatteryState = 0;
-static bool bBattCharg = false;
+static bool bBatteryState = 0;
+static uint8_t u8BattCharg = false;
 
 int anglev, x, y, a;
 int radiusv;
@@ -31,15 +31,16 @@ static void update_time()
 {
   time_t temp = time(NULL);
   struct tm *tick_time = localtime(&temp);
-//  BatteryChargeState ChargeState = battery_state_service_peek();
+  
+  BatteryChargeState ChargeState = battery_state_service_peek();
   
   strftime(szDay, sizeof(szDay), "%a", tick_time);
   strftime(szDate, sizeof(szDate), "%d/%m/%y", tick_time);
   
-//  u8BatteryState = ChargeState->charge_percent;
-//  bBattCharg = ChargeState->is_charging;
+  u8BattCharg = ChargeState.charge_percent;
+  bBatteryState = ChargeState.is_charging;
   
-  snprintf(s_buffer_date, 22, "\r\n\r\n%s\r\n%s\r\n%d", szDay, szDate, 5);
+  snprintf(s_buffer_date, 22, "\r\n\r\n%s\r\n%s", szDay, szDate);
   
   StatusHour = tick_time->tm_hour;
   if (StatusHour >= 12)
@@ -50,17 +51,18 @@ static void update_time()
   layer_mark_dirty(s_canvas_layer);
 }
 
+
 static void  tick_handler(struct tm *tick_time, TimeUnits units_changed) 
 {
   update_time();
 }
 
-/*
-BatteryStateHandler batt_status_handler(BatteryChargeState *charge)
+
+static void batt_status_handler(BatteryChargeState charge_state)
 {  
   update_time();
 }
-*/
+
 
 
 static void canvas_update_proc(Layer *layer, GContext *ctx) 
@@ -112,6 +114,15 @@ static void canvas_update_proc(Layer *layer, GContext *ctx)
   else
     graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 20,
                                   DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(AngleHour));
+  
+  // Draw a rectangle
+  int corner_radius = 0;
+  GRect rect_bounds = GRect(DISP_X_MID-20, DISP_Y_MID+20, 40, 10);
+  graphics_draw_rect(ctx, rect_bounds);
+  rect_bounds = GRect(DISP_X_MID-17, DISP_Y_MID+23, 34, 4);
+  graphics_draw_rect(ctx, rect_bounds);
+  rect_bounds = GRect(DISP_X_MID-17, DISP_Y_MID+23, (int)(34.0f * ((float)u8BattCharg / 100.0f)), 4);
+  graphics_fill_rect(ctx, rect_bounds, corner_radius, GCornersAll);
 }
 
 
@@ -148,7 +159,7 @@ static void init(void)
   // Register with TickTimerService
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
   
-//  battery_state_service_subscribe(batt_status_handler);
+  battery_state_service_subscribe(batt_status_handler);
   
   window_stack_push(window, animated);
 }
