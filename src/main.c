@@ -19,6 +19,8 @@ static int StatusMin = 0;
 static char szDay[10];
 static char szDate[20];
 static char s_buffer_date[30];
+static uint8_t u8BatteryState = 0;
+static bool bBattCharg = false;
 
 int anglev, x, y, a;
 int radiusv;
@@ -29,11 +31,15 @@ static void update_time()
 {
   time_t temp = time(NULL);
   struct tm *tick_time = localtime(&temp);
+//  BatteryChargeState ChargeState = battery_state_service_peek();
   
   strftime(szDay, sizeof(szDay), "%a", tick_time);
   strftime(szDate, sizeof(szDate), "%d/%m/%y", tick_time);
   
-  snprintf(s_buffer_date, 22, "\r\n\r\n%s\r\n%s", szDay, szDate);
+//  u8BatteryState = ChargeState->charge_percent;
+//  bBattCharg = ChargeState->is_charging;
+  
+  snprintf(s_buffer_date, 22, "\r\n\r\n%s\r\n%s\r\n%d", szDay, szDate, 5);
   
   StatusHour = tick_time->tm_hour;
   if (StatusHour >= 12)
@@ -44,10 +50,17 @@ static void update_time()
   layer_mark_dirty(s_canvas_layer);
 }
 
-static void tick_handler(struct tm *tick_time, TimeUnits units_changed) 
+static void  tick_handler(struct tm *tick_time, TimeUnits units_changed) 
 {
   update_time();
 }
+
+/*
+BatteryStateHandler batt_status_handler(BatteryChargeState *charge)
+{  
+  update_time();
+}
+*/
 
 
 static void canvas_update_proc(Layer *layer, GContext *ctx) 
@@ -61,23 +74,24 @@ static void canvas_update_proc(Layer *layer, GContext *ctx)
   graphics_context_set_text_color(ctx, GColorBlack);
   graphics_draw_text(ctx, s_buffer_date, fonts_get_system_font(FONT_KEY_GOTHIC_24), bounds,
                      GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
+ 
   // Minute
   AngleMin = (360.0f * ((float)StatusMin / 60.0f));
-  GRect frame = grect_inset(bounds, GEdgeInsets(-41));
+  GRect frame = grect_inset(bounds, GEdgeInsets(-16));
   graphics_context_set_fill_color(ctx, GColorBlack);
-  graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 47,
+  graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 22,
                                   DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(360.0f));
-  frame = grect_inset(bounds, GEdgeInsets(-40));
+  frame = grect_inset(bounds, GEdgeInsets(-15));
   graphics_context_set_fill_color(ctx, GColorWhite);
-  graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 45,
+  graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 20,
                                   DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(360.0f));
 
   graphics_context_set_fill_color(ctx, GColorBlack);
   if (AngleMin == 0)
-    graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 45,
+    graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 20,
                                   DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(2.0f));
   else
-    graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 45,
+    graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 20,
                                   DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(AngleMin));
   
   // Hour
@@ -133,6 +147,8 @@ static void init(void)
   
   // Register with TickTimerService
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
+  
+//  battery_state_service_subscribe(batt_status_handler);
   
   window_stack_push(window, animated);
 }
