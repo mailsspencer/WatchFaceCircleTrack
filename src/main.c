@@ -16,16 +16,17 @@ static TextLayer *text_layer;
 static Layer *s_canvas_layer;
 static int StatusHour = 0;
 static int StatusMin = 0;
+static int StatusCharge = 0;
+static int PrevChargeTime = 0;
 static char szDay[10];
 static char szDate[20];
+static char szText[20];
 static char s_buffer_date[30];
 static bool bBatteryState = 0;
 static uint8_t u8BattCharg = false;
 
 int anglev, x, y, a;
-int radiusv;
-
-
+int radiusv; 
 
 static void update_time() 
 {
@@ -48,6 +49,13 @@ static void update_time()
     
   StatusMin = tick_time->tm_min; 
   
+  if (bBatteryState == true)
+  {
+    PrevChargeTime = temp;
+  }
+
+  StatusCharge = (temp -PrevChargeTime) / (3600 * 24);  
+ 
   layer_mark_dirty(s_canvas_layer);
 }
 
@@ -70,16 +78,27 @@ static void canvas_update_proc(Layer *layer, GContext *ctx)
   float AngleHour = 0;
   float AngleMin = 0;
 
+  GRect frame;
   GRect bounds = layer_get_bounds(layer);  
+  graphics_context_set_text_color(ctx, GColorBlack);
   
     // Date
-  graphics_context_set_text_color(ctx, GColorBlack);
-  graphics_draw_text(ctx, s_buffer_date, fonts_get_system_font(FONT_KEY_GOTHIC_24), bounds,
+  frame = grect_inset(bounds, GEdgeInsets(-10));
+  graphics_draw_text(ctx, s_buffer_date, fonts_get_system_font(FONT_KEY_GOTHIC_24), frame,
+                     GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
+  
+  // Charge day
+  frame = grect_inset(bounds, GEdgeInsets(50));
+  if (PrevChargeTime == -1)
+    snprintf(szText, 10, "\n\n\n\nn.a");  
+  else
+    snprintf(szText, 10, "\n\n\n\nCD %d",StatusCharge);
+  graphics_draw_text(ctx, szText, fonts_get_system_font(FONT_KEY_GOTHIC_14), frame,
                      GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
  
   // Minute
   AngleMin = (360.0f * ((float)StatusMin / 60.0f));
-  GRect frame = grect_inset(bounds, GEdgeInsets(-16));
+  frame = grect_inset(bounds, GEdgeInsets(-16));
   graphics_context_set_fill_color(ctx, GColorBlack);
   graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 22,
                                   DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(360.0f));
@@ -117,12 +136,15 @@ static void canvas_update_proc(Layer *layer, GContext *ctx)
   
   // Draw a rectangle
   int corner_radius = 0;
-  GRect rect_bounds = GRect(DISP_X_MID-20, DISP_Y_MID+20, 40, 10);
+  GRect rect_bounds = GRect(DISP_X_MID-20, DISP_Y_MID+10, 40, 10);
   graphics_draw_rect(ctx, rect_bounds);
-  rect_bounds = GRect(DISP_X_MID-17, DISP_Y_MID+23, 34, 4);
+  rect_bounds = GRect(DISP_X_MID-17, DISP_Y_MID+13, 34, 4);
   graphics_draw_rect(ctx, rect_bounds);
-  rect_bounds = GRect(DISP_X_MID-17, DISP_Y_MID+23, (int)(34.0f * ((float)u8BattCharg / 100.0f)), 4);
+  rect_bounds = GRect(DISP_X_MID+19, DISP_Y_MID+13, 3, 5);
+  graphics_draw_rect(ctx, rect_bounds);
+  rect_bounds = GRect(DISP_X_MID-17, DISP_Y_MID+13, (int)(34.0f * ((float)u8BattCharg / 100.0f)), 4);
   graphics_fill_rect(ctx, rect_bounds, corner_radius, GCornersAll);
+  
 }
 
 
@@ -155,6 +177,7 @@ static void init(void)
     .unload = window_unload,
   });
   const bool animated = true;
+  PrevChargeTime = -1; // 1466792090;
   
   // Register with TickTimerService
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
