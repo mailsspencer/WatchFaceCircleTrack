@@ -77,6 +77,7 @@ static void canvas_update_proc(Layer *layer, GContext *ctx)
 {
   float AngleHour = 0;
   float AngleMin = 0;
+  float fDivAng = 0;
 
   GRect frame;
   GRect bounds = layer_get_bounds(layer);  
@@ -95,11 +96,10 @@ static void canvas_update_proc(Layer *layer, GContext *ctx)
     snprintf(szText, 10, "\n\n\n\nCD %d",StatusCharge);
   graphics_draw_text(ctx, szText, fonts_get_system_font(FONT_KEY_GOTHIC_14), frame,
                      GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
- 
+    
   // Minute
   AngleMin = (360.0f * ((float)StatusMin / 60.0f));
   frame = grect_inset(bounds, GEdgeInsets(-16));
-  graphics_context_set_fill_color(ctx, GColorBlack);
   graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 22,
                                   DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(360.0f));
   frame = grect_inset(bounds, GEdgeInsets(-15));
@@ -107,16 +107,25 @@ static void canvas_update_proc(Layer *layer, GContext *ctx)
   graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 20,
                                   DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(360.0f));
 
+    // Add minute divisions
+  frame = grect_inset(bounds, GEdgeInsets(-16));
   graphics_context_set_fill_color(ctx, GColorBlack);
+  for ( fDivAng = 0 ; fDivAng < 360 ; fDivAng+=30 )
+  {
+    graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 8,
+                                  DEG_TO_TRIGANGLE(fDivAng), DEG_TO_TRIGANGLE(fDivAng+1));
+  }
+
   if (AngleMin == 0)
-    graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 20,
+    graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 22,
                                   DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(2.0f));
   else
-    graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 20,
+    graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 22,
                                   DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(AngleMin));
   
   // Hour
-  AngleHour = (360.0f * ((float)StatusHour / 12.0f));
+  // AngleHour = (360.0f * ((float)StatusHour / 12.0f));
+  AngleHour = (360.0f * ((float)StatusHour / 12.0f)) + (AngleMin * 0.0833f);
   frame = grect_inset(bounds, GEdgeInsets(9));
   graphics_context_set_fill_color(ctx, GColorBlack);
   graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 22,
@@ -126,12 +135,20 @@ static void canvas_update_proc(Layer *layer, GContext *ctx)
   graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 20,
                                   DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(360.0f));
   
+    // Add hour divisions
+  frame = grect_inset(bounds, GEdgeInsets(9));
   graphics_context_set_fill_color(ctx, GColorBlack);
+  for ( fDivAng = 0 ; fDivAng < 360 ; fDivAng+=30 )
+  {
+    graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 8,
+                                  DEG_TO_TRIGANGLE(fDivAng), DEG_TO_TRIGANGLE(fDivAng+1));
+  }
+  
   if (AngleHour == 0)
-    graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 20,
+    graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 22,
                                   DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(2.0f));
   else
-    graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 20,
+    graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, 22,
                                   DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(AngleHour));
   
   // Draw a rectangle
